@@ -1,0 +1,17 @@
+# admin/config.yml
+backend:
+  name: git-gateway
+  branch: main # আপনার GitHub-এর প্রধান branch-এর নাম (main/master) লিখুন
+
+local_backend: true 
+
+collections:
+  - name: "assignments" 
+    label: "দৈনিক অ্যাসাইনমেন্টের লিঙ্ক"
+    folder: "_assignments" # ডেটা এই ফোল্ডারে সেভ হবে
+    create: true 
+    slug: "{{year}}-{{month}}-{{day}}-{{slug}}"
+    fields: 
+      - {label: "Assignment এর নাম / তারিখ", name: "title", widget: "string", required: true}
+      - {label: "Google Drive/ফাইল লিঙ্ক", name: "drive_link", widget: "string", required: true}
+      - {label: "বিষয়", name: "subject", widget: "string", default: "সাধারণ অ্যাসাইনমেন্ট"}

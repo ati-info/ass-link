@@ -1,0 +1,105 @@
+<!DOCTYPE html>
+<html lang="bn">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>আমাদের ক্লাসের অ্যাসাইনমেন্ট লিঙ্ক</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+    <header>
+        <h1>ক্লাস অ্যাসাইনমেন্ট হাব</h1>
+        <p>অ্যাডমিন প্যানেল: <a href="/admin" target="_blank">/admin</a></p>
+    </header>
+
+    <main id="assignments-container">
+        <h2>লোড হচ্ছে...</h2>
+    </main>
+
+    <script>
+        // ***এই দুটি লাইন পরিবর্তন করুন***
+        const GITHUB_USERNAME = "ati-info"; // যেমন: hasan
+        const REPO_NAME = "ass-link"; // যেমন: assignment-links-cms 
+        
+        const CONTENT_PATH = "_assignments"; 
+
+        // GitHub API ব্যবহার করে ডেটা ফেচ করার ফাংশন
+        async function fetchAssignments() {
+            // ডেটা লোড করার জন্য প্রয়োজনীয় কোড...
+            const url = `https://api.github.com/repos/${GITHUB_USERNAME}/${REPO_NAME}/contents/${CONTENT_PATH}`;
+            
+            try {
+                const response = await fetch(url);
+                if (!response.ok) {
+                    throw new Error(`GitHub API error: ${response.status}`);
+                }
+                const files = await response.json();
+                
+                const contentFiles = files.filter(file => file.name.endsWith('.yml'));
+                
+                const assignments = [];
+                for (const file of contentFiles) {
+                    const contentResponse = await fetch(file.download_url);
+                    const contentText = await contentResponse.text();
+                    
+                    // YAML ডেটা থেকে ভ্যালু বের করা
+                    const driveLink = extractValueFromYaml(contentText, 'drive_link');
+                    const title = extractValueFromYaml(contentText, 'title');
+                    const subject = extractValueFromYaml(contentText, 'subject') || 'বিষয় উল্লেখ নেই';
+
+                    if (driveLink && title) {
+                        assignments.push({ title, driveLink, subject, date: new Date(file.name.substring(0, 10)) });
+                    }
+                }
+
+                assignments.sort((a, b) => b.date - a.date); 
+                displayAssignments(assignments);
+
+            } catch (error) {
+                console.error("অ্যাসাইনমেন্ট লোড করতে সমস্যা:", error);
+                document.getElementById('assignments-container').innerHTML = `<h2>দুঃখিত, অ্যাসাইনমেন্ট লোড করা সম্ভব হয়নি।</h2>`;
+            }
+        }
+
+        // YAML পার্স করার ফাংশন
+        function extractValueFromYaml(yamlText, key) {
+            const regex = new RegExp(`^${key}:\\s*(.*)$`, 'm');
+            const match = yamlText.match(regex);
+            if (match && match[1]) {
+                return match[1].trim().replace(/^['"]|['"]$/g, '');
+            }
+            return null;
+        }
+
+        // ওয়েবসাইটে ডেটা প্রদর্শন করার ফাংশন
+        function displayAssignments(assignments) {
+            const container = document.getElementById('assignments-container');
+            container.innerHTML = '<h2>সাম্প্রতিক অ্যাসাইনমেন্ট লিঙ্ক</h2>';
+
+            if (assignments.length === 0) {
+                container.innerHTML += '<p>এখনও কোনো অ্যাসাইনমেন্ট আপলোড করা হয়নি।</p>';
+                return;
+            }
+
+            const list = document.createElement('ul');
+            assignments.forEach(assignment => {
+                const listItem = document.createElement('li');
+                listItem.innerHTML = `
+                    <div class="assignment-card">
+                        <h3>${assignment.title} <span class="subject">(${assignment.subject})</span></h3>
+                        <p>প্রকাশের তারিখ: ${assignment.date.toLocaleDateString('bn-BD')}</p>
+                        <a href="${assignment.driveLink}" target="_blank" class="download-button">
+                            Google Drive থেকে ডাউনলোড করুন
+                        </a>
+                    </div>
+                `;
+                list.appendChild(listItem);
+            });
+            container.appendChild(list);
+        }
+
+        fetchAssignments();
+    </script>
+</body>
+</html>
